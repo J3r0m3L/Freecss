@@ -28,6 +28,41 @@ export interface Health {
   jobs: Array<{ job_name: string; status: string; started_at: string; finished_at: string | null }>;
 }
 
+export type Severity = "info" | "warn" | "high" | "critical";
+
+export interface Alert {
+  id: number;
+  symbol: string;
+  kind: string;
+  severity: Severity;
+  adverse: boolean;
+  ts: string;
+  payload: Record<string, unknown>;
+  notified_via: string | null;
+  acked_at: string | null;
+  quiet_queued: boolean;
+}
+
+export interface Bar {
+  ts: string;
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  v: number;
+  vwap: number | null;
+}
+
+export interface InstrumentDetail {
+  symbol: string;
+  display_name: string;
+  asset_class: string;
+  exchange: string | null;
+  meta: Record<string, unknown> | null;
+  watch: { id: number; direction: "BULL" | "BEAR"; position_size: number | null } | null;
+  snapshot: Snapshot | null;
+}
+
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -47,4 +82,14 @@ export const api = {
     }).then((r) => json<Watch>(r)),
   removeWatch: (id: number) =>
     fetch(`/api/watchlist/${id}`, { method: "DELETE" }).then((r) => json<{ ok: boolean }>(r)),
+  alerts: (limit = 50) =>
+    fetch(`/api/alerts?limit=${limit}`).then((r) => json<Alert[]>(r)),
+  ackAlert: (id: number) =>
+    fetch(`/api/alerts/${id}/ack`, { method: "POST" }).then((r) => json<{ ok: boolean }>(r)),
+  instrument: (symbol: string) =>
+    fetch(`/api/instrument/${symbol}`).then((r) => json<InstrumentDetail>(r)),
+  bars: (symbol: string, tf = "1m") =>
+    fetch(`/api/instrument/${symbol}/bars?tf=${tf}`).then(
+      (r) => json<{ symbol: string; tf: string; bars: Bar[] }>(r),
+    ),
 };

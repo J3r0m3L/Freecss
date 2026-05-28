@@ -12,7 +12,9 @@ import logging
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from server.jobs import tick_aggregator
+from server.alerts.quiet_hours import ET
+from server.db import get_setting
+from server.jobs import pushover_ack, quiet_digest, quote_stream, threshold_eval, tick_aggregator
 
 log = logging.getLogger("deleveraging_watch.scheduler")
 
@@ -27,6 +29,17 @@ def start() -> None:
     if scheduler.running:
         return
     scheduler.add_job(tick_aggregator.run, "interval", seconds=60, id="tick_aggregator")
+    scheduler.add_job(threshold_eval.run, "interval", seconds=5, id="threshold_evaluator")
+    scheduler.add_job(quote_stream.run, "interval", seconds=30, id="quote_stream_supervisor")
+    scheduler.add_job(pushover_ack.run, "interval", seconds=30, id="pushover_ack_poll")
+
+    # Morning digest at the configured ET time (default 08:00).
+    digest_hhmm = (get_setting("global", {}) or {}).get("quiet_hours", {}).get(
+        "digest_time_et", "08:00")
+    dh, dm = (int(x) for x in digest_hhmm.split(":"))
+    scheduler.add_job(quiet_digest.run, "cron", hour=dh, minute=dm,
+                      timezone=ET, id="quiet_digest_send")
+
     scheduler.start()
     log.info("scheduler started with jobs: %s", [j.id for j in scheduler.get_jobs()])
 

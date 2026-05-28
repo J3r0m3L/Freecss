@@ -18,6 +18,7 @@ class Feed:
     def __init__(self) -> None:
         self._adapter = make_adapter()
         self._socketio = None
+        self.adapter = self._adapter  # public handle for supervisor/health checks
         self._symbols: set[str] = set()
         self._inst_ids: dict[str, int] = {}
         self._lock = threading.Lock()

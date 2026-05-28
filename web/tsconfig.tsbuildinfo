@@ -1,0 +1,1 @@
+{"root":["./src/main.tsx","./src/lib/api.ts","./src/lib/socket.ts","./src/routes/grid.tsx","./src/routes/instrument.tsx"],"version":"5.9.3"}

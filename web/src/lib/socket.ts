@@ -10,6 +10,11 @@ export function onTick(symbol: string, cb: (q: TickEvent) => void): () => void {
   return () => socket.off(evt, cb);
 }
 
+export function onAlert(cb: (a: AlertEvent) => void): () => void {
+  socket.on("alerts", cb);
+  return () => socket.off("alerts", cb);
+}
+
 export interface TickEvent {
   symbol: string;
   ts: string;
@@ -18,4 +23,16 @@ export interface TickEvent {
   last: number | null;
   bid_size: number | null;
   ask_size: number | null;
+}
+
+export interface AlertEvent {
+  id: number;
+  symbol: string;
+  kind: string;
+  severity: "info" | "warn" | "high" | "critical";
+  adverse: boolean;
+  ts: string;
+  title: string;
+  body: string;
+  payload: Record<string, unknown>;
 }

@@ -30,16 +30,16 @@ FinBERT news/X pipeline + earnings (Phase 2), factor exposures (Phase 3), notes
 # from the repo root (Freecss/), using the project venv
 ../bin/pip install -e .          # Phase 0 deps
 cp .env.example .env             # optional; Phase 0 runs with no keys
-../bin/python -m server          # serves http://127.0.0.1:5000
+../bin/python -m server          # serves http://127.0.0.1:5001
 ```
 
 Quick check:
 
 ```bash
-curl 127.0.0.1:5000/api/health
-curl -X POST 127.0.0.1:5000/api/watchlist \
+curl 127.0.0.1:5001/api/health
+curl -X POST 127.0.0.1:5001/api/watchlist \
   -H 'Content-Type: application/json' -d '{"symbol":"AAPL","direction":"BULL"}'
-curl 127.0.0.1:5000/api/watchlist
+curl 127.0.0.1:5001/api/watchlist
 ```
 
 > Bind address is IPv4 `127.0.0.1`. On macOS, `localhost` may resolve to IPv6
@@ -50,7 +50,7 @@ curl 127.0.0.1:5000/api/watchlist
 ```bash
 cd web
 npm install
-npm run dev        # http://localhost:5173, proxies /api + Socket.IO to :5000
+npm run dev        # http://localhost:5173, proxies /api + Socket.IO to :5001
 # or: npm run build  → emits web/dist, which the Flask server serves at /
 ```
 

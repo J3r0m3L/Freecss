@@ -28,7 +28,8 @@ class Config:
         default_factory=lambda: (_REPO_ROOT / os.environ.get("DW_DB_PATH", "deleveraging_watch.db"))
     )
     host: str = field(default_factory=lambda: os.environ.get("DW_HOST", "127.0.0.1"))
-    port: int = field(default_factory=lambda: int(os.environ.get("DW_PORT", "5000")))
+    # Default 5001 to avoid macOS AirPlay Receiver, which binds 0.0.0.0:5000.
+    port: int = field(default_factory=lambda: int(os.environ.get("DW_PORT", "5001")))
 
     data_adapter: str = field(default_factory=lambda: os.environ.get("DW_DATA_ADAPTER", "stub"))
     notifier: str = field(default_factory=lambda: os.environ.get("DW_NOTIFIER", "console"))

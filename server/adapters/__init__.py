@@ -11,8 +11,11 @@ def make_adapter(name: str | None = None) -> DataAdapter:
     name = name or config.data_adapter
     if name == "stub":
         return StubAdapter()
-    # Phase 1: `massive` → MassiveAdapter (Polygon WS endpoints, post-rebrand).
-    raise ValueError(f"unknown data adapter {name!r} (Phase 0 supports 'stub' only)")
+    if name == "massive":
+        from server.adapters.massive import MassiveAdapter
+
+        return MassiveAdapter()
+    raise ValueError(f"unknown data adapter {name!r} (supported: 'stub', 'massive')")
 
 
 __all__ = ["Bar", "DataAdapter", "StubAdapter", "make_adapter"]

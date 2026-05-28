@@ -26,8 +26,11 @@ def make_notifier(name: str | None = None) -> Notifier:
     name = name or config.notifier
     if name == "console":
         return ConsoleNotifier()
-    # Phase 1: 'pushover' → PushoverNotifier (4 app tokens, §3.2/§12).
-    raise ValueError(f"unknown notifier {name!r} (Phase 0 supports 'console' only)")
+    if name == "pushover":
+        from server.alerts.notifiers.pushover import PushoverNotifier
+
+        return PushoverNotifier()
+    raise ValueError(f"unknown notifier {name!r} (supported: 'console', 'pushover')")
 
 
 __all__ = ["Notifier", "NotifyResult", "ConsoleNotifier", "make_notifier"]
