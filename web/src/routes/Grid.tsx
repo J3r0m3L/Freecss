@@ -131,6 +131,7 @@ export function Grid() {
         </span>
         <span className="badge">adapter: {health?.feed.adapter ?? "—"}</span>
         <Link to="/news" className="badge" style={{ textDecoration: "none" }}>news</Link>
+        <Link to="/notes" className="badge" style={{ textDecoration: "none" }}>notes</Link>
         <Link to="/settings" className="badge" style={{ textDecoration: "none" }}>settings</Link>
         {lastAlert ? (
           <Link to={`/instrument/${lastAlert.symbol}`} className="badge"

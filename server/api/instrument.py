@@ -29,6 +29,7 @@ def detail(symbol: str):
     )
     q = state.latest(symbol)
     return jsonify({
+        "instrument_id": inst["id"],
         "symbol": inst["symbol"],
         "display_name": inst["display_name"],
         "asset_class": inst["asset_class"],

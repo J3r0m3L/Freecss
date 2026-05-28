@@ -9,6 +9,7 @@ def register_blueprints(app: Flask) -> None:
     from server.api.earnings import bp as earnings_bp
     from server.api.health import bp as health_bp
     from server.api.instrument import bp as instrument_bp
+    from server.api.liquidity import bp as liquidity_bp
     from server.api.news import bp as news_bp
     from server.api.notes import bp as notes_bp
     from server.api.settings import bp as settings_bp
@@ -26,3 +27,4 @@ def register_blueprints(app: Flask) -> None:
     app.register_blueprint(social_bp)
     app.register_blueprint(earnings_bp)
     app.register_blueprint(usage_bp)
+    app.register_blueprint(liquidity_bp)

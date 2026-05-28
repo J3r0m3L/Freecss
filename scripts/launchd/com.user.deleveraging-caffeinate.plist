@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Prevent-sleep agent (DESIGN.md §14, Phase 4 ops polish).
+
+  Runs `caffeinate -i` for the life of the LaunchAgent so the laptop stays awake
+  for background jobs even with the lid closed (when paired with the standard
+  "lid-closed-with-external-display-or-power" macOS rule). See OPS_LAPTOP.md.
+
+  Install:
+    cp scripts/launchd/com.user.deleveraging-caffeinate.plist ~/Library/LaunchAgents/
+    launchctl load -w ~/Library/LaunchAgents/com.user.deleveraging-caffeinate.plist
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.user.deleveraging-caffeinate</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/caffeinate</string>
+        <string>-i</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>

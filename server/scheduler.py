@@ -16,10 +16,12 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from server.alerts.quiet_hours import ET
 from server.db import get_setting
 from server.jobs import (
+    archive_ticks,
     earnings_sync,
     factor_pca,
     factor_refresh,
     historical_bars_warmup,
+    liquidity_refresh,
     massive_news_poll,
     profile_text_refresh,
     pushover_ack,
@@ -82,6 +84,12 @@ def start() -> None:
                       timezone=ET, id="factor_refresh")
     scheduler.add_job(residual_intraday.run, "interval", seconds=60,
                       id="residual_intraday")
+
+    # Phase 4: liquidity layer + nightly archive.
+    scheduler.add_job(liquidity_refresh.run, "cron", hour=16, minute=35,
+                      timezone=ET, id="liquidity_refresh")
+    scheduler.add_job(archive_ticks.run, "cron", hour=3, minute=15,
+                      id="archive_ticks")
 
     scheduler.start()
     log.info("scheduler started with jobs: %s", [j.id for j in scheduler.get_jobs()])

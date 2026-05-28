@@ -27,15 +27,29 @@ bp = Blueprint("notes", __name__, url_prefix="/api")
 
 
 def _view(r: dict) -> dict:
+    """Notes carry their linked-entity ids; the UI fetches details lazily.
+
+    `symbol` is denormalized in the SELECT (LEFT JOIN instrument) so the global
+    /notes feed can show a chip without a second round-trip per row.
+    """
     return {
         "id": r["id"],
         "instrument_id": r["instrument_id"],
+        "symbol": r.get("symbol"),
         "ts": r["ts"],
         "body": r["body"],
         "linked_alert_id": r["linked_alert_id"],
         "linked_news_id": r["linked_news_id"],
         "linked_social_post_id": r["linked_social_post_id"],
     }
+
+
+_NOTE_COLS = (
+    "u.id, u.instrument_id, u.ts, u.body, "
+    "u.linked_alert_id, u.linked_news_id, u.linked_social_post_id, "
+    "i.symbol "
+)
+_NOTE_FROM = "FROM update_log u LEFT JOIN instrument i ON i.id = u.instrument_id"
 
 
 def _insert_note(*, body: str, instrument_id: int | None,
@@ -66,22 +80,22 @@ def list_notes():
     where = []
     params: list = []
     if scope == "global":
-        where.append("instrument_id IS NULL")
+        where.append("u.instrument_id IS NULL")
     elif scope == "symbol":
         if instrument_id is None:
             return jsonify({"error": "instrument_id required for scope=symbol"}), 400
-        where.append("instrument_id=?")
+        where.append("u.instrument_id=?")
         params.append(instrument_id)
     elif instrument_id is not None:
-        where.append("instrument_id=?")
+        where.append("u.instrument_id=?")
         params.append(instrument_id)
     if since:
-        where.append("ts >= ?")
+        where.append("u.ts >= ?")
         params.append(since)
-    sql = "SELECT * FROM update_log"
+    sql = f"SELECT {_NOTE_COLS} {_NOTE_FROM}"
     if where:
         sql += " WHERE " + " AND ".join(where)
-    sql += " ORDER BY ts DESC LIMIT 200"
+    sql += " ORDER BY u.ts DESC LIMIT 200"
     return jsonify([_view(r) for r in rows(sql, tuple(params))])
 
 
@@ -102,7 +116,7 @@ def create_note():
         linked_news_id=body.get("linked_news_id"),
         linked_social_post_id=body.get("linked_social_post_id"),
     )
-    r = one("SELECT * FROM update_log WHERE id=?", (note_id,))
+    r = one(f"SELECT {_NOTE_COLS} {_NOTE_FROM} WHERE u.id=?", (note_id,))
     return jsonify(_view(r)), 201
 
 
@@ -135,7 +149,7 @@ def from_news(news_id: int):
     )
     body = f"{news['title']}\n{news.get('url') or ''}".strip()
     note_id = _insert_note(body=body, instrument_id=iid, linked_news_id=news_id)
-    r = one("SELECT * FROM update_log WHERE id=?", (note_id,))
+    r = one(f"SELECT {_NOTE_COLS} {_NOTE_FROM} WHERE u.id=?", (note_id,))
     return jsonify(_view(r)), 201
 
 
@@ -151,8 +165,39 @@ def from_social(post_id: int):
     body = f"{post['body']}\n{post.get('url') or ''}".strip()
     note_id = _insert_note(body=body, instrument_id=iid,
                            linked_social_post_id=post_id)
-    r = one("SELECT * FROM update_log WHERE id=?", (note_id,))
+    r = one(f"SELECT {_NOTE_COLS} {_NOTE_FROM} WHERE u.id=?", (note_id,))
     return jsonify(_view(r)), 201
+
+
+@bp.post("/notes/from-alert/<int:alert_id>")
+def from_alert(alert_id: int):
+    """Pre-fill a note from an alert row. Attaches to the alert's instrument
+    automatically (alerts always have one), unless overridden in the body."""
+    alert = one(
+        "SELECT a.id, a.kind, a.severity, a.payload_json, a.ts, "
+        "       a.instrument_id, i.symbol "
+        "FROM alert a JOIN instrument i ON i.id = a.instrument_id "
+        "WHERE a.id=?",
+        (alert_id,),
+    )
+    if not alert:
+        return jsonify({"error": "alert not found"}), 404
+    override = (request.get_json(silent=True) or {}).get("instrument_id")
+    iid = override if override is not None else alert["instrument_id"]
+    body = (f"{alert['symbol']} {alert['kind']}/{alert['severity']} "
+            f"at {alert['ts']}").strip()
+    note_id = _insert_note(body=body, instrument_id=iid,
+                           linked_alert_id=alert_id)
+    r = one(f"SELECT {_NOTE_COLS} {_NOTE_FROM} WHERE u.id=?", (note_id,))
+    return jsonify(_view(r)), 201
+
+
+@bp.delete("/notes/<int:note_id>")
+def delete_note(note_id: int):
+    if not one("SELECT 1 FROM update_log WHERE id=?", (note_id,)):
+        return jsonify({"error": "note not found"}), 404
+    execute("DELETE FROM update_log WHERE id=?", (note_id,))
+    return jsonify({"ok": True})
 
 
 @bp.get("/instrument/<symbol>/related_notes")

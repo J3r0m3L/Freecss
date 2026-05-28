@@ -54,6 +54,7 @@ export interface Bar {
 }
 
 export interface InstrumentDetail {
+  instrument_id: number;
   symbol: string;
   display_name: string;
   asset_class: string;
@@ -127,6 +128,41 @@ export interface ExposuresResp {
   exposures: Exposure[];
 }
 
+// Phase 4: notes + liquidity types.
+export interface Note {
+  id: number;
+  instrument_id: number | null;
+  symbol: string | null;
+  ts: string;
+  body: string;
+  linked_alert_id: number | null;
+  linked_news_id: number | null;
+  linked_social_post_id: number | null;
+}
+
+export interface RelatedNote {
+  id: number;
+  ts: string;
+  body: string;
+  cosine: number;
+}
+
+export interface Liquidity {
+  symbol: string;
+  computed_at: string | null;
+  as_of: string | null;
+  adv_shares_21d: number | null;
+  adv_dollar_21d: number | null;
+  spread_avg_bps: number | null;
+  pct_zero_volume: number | null;
+  participation: number;
+  position_size: number | null;
+  rank_in_watchlist: number | null;
+  watchlist_size: number | null;
+  days_to_exit: number | null;
+  cost_to_exit_bps: number | null;
+}
+
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -160,6 +196,54 @@ export const api = {
     fetch(`/api/instrument/${symbol}/exposures?significant_only=${significantOnly}`).then(
       (r) => json<ExposuresResp>(r),
     ),
+
+  // Notes (Phase 4)
+  notes: (params: {
+    scope?: "all" | "global" | "symbol";
+    instrument_id?: number;
+    since?: string;
+  } = {}) => {
+    const q = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      if (v !== undefined && v !== null && String(v) !== "") q.set(k, String(v));
+    }
+    return fetch(`/api/notes${q.toString() ? `?${q}` : ""}`).then((r) => json<Note[]>(r));
+  },
+  createNote: (body: string, instrumentId?: number | null,
+               linkedAlertId?: number | null) =>
+    fetch("/api/notes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        body,
+        instrument_id: instrumentId ?? undefined,
+        linked_alert_id: linkedAlertId ?? undefined,
+      }),
+    }).then((r) => json<Note>(r)),
+  deleteNote: (id: number) =>
+    fetch(`/api/notes/${id}`, { method: "DELETE" }).then((r) => json<{ ok: boolean }>(r)),
+  noteFromAlert: (alertId: number, instrumentId?: number) =>
+    fetch(`/api/notes/from-alert/${alertId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(instrumentId ? { instrument_id: instrumentId } : {}),
+    }).then((r) => json<Note>(r)),
+  relatedNotes: (symbol: string, cosineMin = 0.55) =>
+    fetch(`/api/instrument/${symbol}/related_notes?cosine_min=${cosineMin}`).then(
+      (r) => json<RelatedNote[]>(r),
+    ),
+
+  // Liquidity (Phase 4)
+  liquidity: (symbol: string, participation = 0.10) =>
+    fetch(`/api/instrument/${symbol}/liquidity?participation=${participation}`).then(
+      (r) => json<Liquidity>(r),
+    ),
+  setPositionSize: (watchId: number, positionSize: number | null) =>
+    fetch(`/api/watchlist/${watchId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ thresholds: { position_size: positionSize } }),
+    }).then((r) => json<{ ok: boolean }>(r)),
 
   // News + social (Phase 2)
   news: (params: {

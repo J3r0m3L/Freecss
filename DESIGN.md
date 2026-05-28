@@ -1497,7 +1497,13 @@ deleveraging-watch/
     ├── test_residual.py                 (intraday actual − expected)
     ├── test_adapters_daily.py           (massive_daily stub: correlated stub bars)
     ├── test_jobs_factor.py              (warmup → PCA → refresh → residual chain)
-    └── test_api_exposures.py            (/api/instrument/<sym>/exposures contract)
+    ├── test_api_exposures.py            (/api/instrument/<sym>/exposures contract)
+    # Phase 4 coverage (notes + liquidity + archive)
+    ├── test_liquidity.py                (ADV roll-up + exit-liquidity helpers)
+    ├── test_jobs_liquidity.py           (liquidity_refresh writes per-instrument)
+    ├── test_api_liquidity.py            (/api/instrument/<sym>/liquidity + position size)
+    ├── test_jobs_archive_ticks.py       (hot window kept, cold ticks archived)
+    └── test_api_notes_phase4.py         (from-alert, DELETE, symbol denormalization)
 ```
 
 ---
@@ -1512,7 +1518,7 @@ Testing is a per-phase discipline, not a phase of its own: every phase ships pyt
 | 1 | v1 | done | Live quotes + price/volume/spread thresholds |
 | 2 | v1 | done | News + social pipeline (Massive news + X) + earnings |
 | 3 | v1 | done | Factor exposures (80-bucket PCA + BH-FDR) |
-| 4 | v1 | not started | Notes (per-symbol + global) + liquidity layer + ops polish |
+| 4 | v1 | done | Notes (per-symbol + global) + liquidity layer + ops polish |
 | 5 | v2 | future | Bucket-level alerts + candidate-basket editor |
 | 6 | v2 (paid) | future | Options Advanced — requires +$199/mo Massive Options subscription |
 | 7 | v3 (paid) | future | Futures Advanced — requires Massive Futures subscription |

@@ -209,3 +209,78 @@ a.backlink:hover { color: var(--text); }
 .exposures-table tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
 .exposures-table td.adverse  { color: var(--down); font-weight: 600; }
 .exposures-table td.aligned  { color: var(--up); }
+
+/* Notes — composer + list (§11.D) */
+.notes-page { padding: 12px 16px; }
+.notes-block { display: flex; flex-direction: column; gap: 10px; }
+.note-composer {
+  display: flex; gap: 6px; align-items: flex-start; margin-bottom: 4px;
+}
+.note-composer textarea {
+  flex: 1; min-height: 44px; resize: vertical;
+  background: var(--card); border: 1px solid var(--border); color: var(--text);
+  border-radius: 4px; padding: 6px 8px; font-family: var(--sans); font-size: 13px;
+}
+.note-composer button {
+  background: var(--card); border: 1px solid var(--border); color: var(--text);
+  border-radius: 4px; padding: 6px 14px; font-size: 13px; cursor: pointer;
+}
+.notes-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.note {
+  background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+  padding: 6px 10px;
+}
+.note header { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+.note header .ts { font-family: var(--mono); }
+.note header .ticker {
+  font-family: var(--mono); font-size: 11px; padding: 1px 4px;
+  border: 1px solid var(--border); border-radius: 3px; color: var(--text);
+}
+.note-link { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.note .del {
+  margin-left: auto; background: none; border: none; color: var(--muted);
+  cursor: pointer; font-size: 12px;
+}
+.note .del:hover { color: var(--down); }
+.note .body { margin: 4px 0 0; font-family: var(--sans); font-size: 13px; white-space: pre-wrap; }
+
+.related-notes { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--border); }
+.related-notes h4 { font-size: 12px; font-weight: 500; color: var(--muted); margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+.related-notes ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.related-notes li { background: var(--card); border: 1px solid var(--border); border-radius: 4px; padding: 6px 10px; }
+.related-notes .meta { display: flex; gap: 8px; font-size: 11px; color: var(--muted); }
+.related-notes .cosine { color: var(--text); }
+.related-notes pre { margin: 4px 0 0; font-family: var(--sans); font-size: 13px; white-space: pre-wrap; }
+
+/* Save-to-notes from an alert row */
+.alert-row .save-alert {
+  margin-left: auto; background: none; border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer; padding: 1px 8px; border-radius: 3px;
+  font-size: 11px;
+}
+.alert-row .save-alert:hover { color: var(--text); border-color: var(--muted); }
+
+/* Microstructure tab (§11.C) */
+.micro-panel { display: flex; flex-direction: column; gap: 14px; }
+.micro-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+.micro-cell {
+  background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+  padding: 8px 12px; display: flex; flex-direction: column; gap: 2px;
+}
+.micro-cell .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.micro-cell .value { font-size: 16px; }
+.micro-panel h4 { font-size: 12px; font-weight: 500; color: var(--muted); margin: 6px 0 0; text-transform: uppercase; letter-spacing: 0.04em; }
+.position-form { display: flex; gap: 8px; align-items: end; }
+.position-form label { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: var(--muted); }
+.position-form input {
+  background: var(--card); border: 1px solid var(--border); color: var(--text);
+  border-radius: 4px; padding: 4px 8px; font-size: 13px; min-width: 140px;
+}
+.position-form button {
+  background: var(--card); border: 1px solid var(--border); color: var(--text);
+  border-radius: 4px; padding: 5px 12px; font-size: 13px; cursor: pointer;
+}
+.micro-stamp { color: var(--muted); font-size: 11px; }

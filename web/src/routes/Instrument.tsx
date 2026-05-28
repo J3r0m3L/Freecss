@@ -17,6 +17,9 @@ import { api, type Bar, type Alert } from "../lib/api";
 import { onTick } from "../lib/socket";
 import { NewsList } from "../components/NewsList";
 import { ContextTable } from "../components/ContextTable";
+import { NotesList } from "../components/NotesList";
+import { RelatedNotes } from "../components/RelatedNotes";
+import { Microstructure } from "../components/Microstructure";
 
 type TabId = "tape" | "micro" | "context" | "news" | "notes" | "earnings";
 
@@ -180,6 +183,16 @@ export function Instrument() {
                 <span className={`sev ${a.severity}`}>{a.severity}</span>
                 <span>{a.kind}</span>
                 <span className="body">{JSON.stringify(a.payload)}</span>
+                <button
+                  className="save-alert"
+                  title="Save to notes"
+                  onClick={async () => {
+                    try { await api.noteFromAlert(a.id); window.alert("Saved."); }
+                    catch (e) { window.alert(`Save failed: ${(e as Error).message}`); }
+                  }}
+                >
+                  save
+                </button>
               </div>
             ))
           )}
@@ -206,6 +219,18 @@ export function Instrument() {
             onToggleSignificant={setSignificantOnly}
           />
         )
+      ) : tab === "micro" ? (
+        <Microstructure symbol={sym} detail={d} />
+      ) : tab === "notes" ? (
+        <>
+          <NotesList
+            scope="symbol"
+            instrumentId={d.instrument_id}
+            queryKey={["notes", "symbol", sym]}
+            emptyHint="No notes on this symbol yet. Use the composer above to add one."
+          />
+          <RelatedNotes symbol={sym} />
+        </>
       ) : tab === "earnings" ? (
         earningsQ.isLoading ? (
           <div className="empty">Loading earnings…</div>

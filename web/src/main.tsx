@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Grid } from "./routes/Grid";
 import { Instrument } from "./routes/Instrument";
 import { News } from "./routes/News";
+import { Notes } from "./routes/Notes";
 import { Settings } from "./routes/Settings";
 import "./index.css";
 
@@ -18,8 +19,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/" element={<Grid />} />
           <Route path="/instrument/:symbol" element={<Instrument />} />
           <Route path="/news" element={<News />} />
+          <Route path="/notes" element={<Notes />} />
           <Route path="/settings" element={<Settings />} />
-          {/* Phase 4: /notes */}
           <Route path="*" element={<Grid />} />
         </Routes>
       </BrowserRouter>

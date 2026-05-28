@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Deleveraging Watch — launchd plist (DESIGN.md §14, Phase 4 ops polish).
+
+  Install:
+    cp scripts/launchd/com.user.deleveraging-watch.plist ~/Library/LaunchAgents/
+    launchctl load -w ~/Library/LaunchAgents/com.user.deleveraging-watch.plist
+
+  Reload after editing:
+    launchctl unload  ~/Library/LaunchAgents/com.user.deleveraging-watch.plist
+    launchctl load -w ~/Library/LaunchAgents/com.user.deleveraging-watch.plist
+
+  Inspect:
+    launchctl list | grep deleveraging
+    tail -f ~/Library/Logs/deleveraging-watch/server.log
+
+  Two paths below must be edited for your machine — the *_PATH_PLACEHOLDER
+  markers point at the user-specific locations:
+    - PROGRAM_PATH      : absolute path to the venv's python interpreter
+    - WORKING_DIRECTORY : absolute path to the Freecss/ checkout
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.user.deleveraging-watch</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>PYTHON_PATH_PLACEHOLDER</string>
+        <string>-m</string>
+        <string>server</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>FREECSS_PATH_PLACEHOLDER</string>
+
+    <!-- launchd keeps the process alive across crashes, but respects throttling
+         so a hard crash loop won't burn the laptop. -->
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+
+    <!-- Boot launched at login; no need to wait for the user to open a terminal. -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Modest CPU/mem footprint expected; tighten if a runaway shows up. -->
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <key>StandardOutPath</key>
+    <string>HOME_PATH_PLACEHOLDER/Library/Logs/deleveraging-watch/server.log</string>
+    <key>StandardErrorPath</key>
+    <string>HOME_PATH_PLACEHOLDER/Library/Logs/deleveraging-watch/server.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <!-- Force the analytics extras and the real Pushover/FinBERT backends
+             once you're past development. Leave these out for stub-only runs. -->
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin</string>
+        <key>DW_FINBERT_BACKEND</key>
+        <string>auto</string>
+        <key>DW_PROFILE_TEXT_BACKEND</key>
+        <string>auto</string>
+    </dict>
+</dict>
+</plist>
