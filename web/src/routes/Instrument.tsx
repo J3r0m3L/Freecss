@@ -16,6 +16,7 @@ import {
 import { api, type Bar, type Alert } from "../lib/api";
 import { onTick } from "../lib/socket";
 import { NewsList } from "../components/NewsList";
+import { ContextTable } from "../components/ContextTable";
 
 type TabId = "tape" | "micro" | "context" | "news" | "notes" | "earnings";
 
@@ -102,6 +103,7 @@ export function Instrument() {
   const { symbol = "" } = useParams();
   const sym = symbol.toUpperCase();
   const [tab, setTab] = useState<TabId>("tape");
+  const [significantOnly, setSignificantOnly] = useState(true);
 
   const detailQ = useQuery({ queryKey: ["instrument", sym], queryFn: () => api.instrument(sym) });
   const barsQ = useQuery({
@@ -120,6 +122,12 @@ export function Instrument() {
     queryKey: ["earnings", sym],
     queryFn: () => api.earningsForSymbol(sym),
     enabled: tab === "earnings",
+  });
+  const contextQ = useQuery({
+    queryKey: ["exposures", sym, significantOnly],
+    queryFn: () => api.exposures(sym, significantOnly),
+    enabled: tab === "context",
+    refetchInterval: 60_000,        // pick up residual_intraday updates
   });
 
   const symAlerts = useMemo(
@@ -183,6 +191,19 @@ export function Instrument() {
           <NewsList
             items={newsQ.data ?? []}
             empty="No news or X posts above the relevance threshold for this symbol."
+          />
+        )
+      ) : tab === "context" ? (
+        contextQ.isLoading ? (
+          <div className="empty">Loading exposures…</div>
+        ) : contextQ.error ? (
+          <div className="empty down">{(contextQ.error as Error).message}</div>
+        ) : (
+          <ContextTable
+            rows={contextQ.data?.exposures ?? []}
+            direction={d.watch?.direction}
+            significantOnly={significantOnly}
+            onToggleSignificant={setSignificantOnly}
           />
         )
       ) : tab === "earnings" ? (

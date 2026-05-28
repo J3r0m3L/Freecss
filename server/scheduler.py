@@ -8,6 +8,7 @@ liquidity refresh, and tick archival on the same scheduler.
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timedelta
 
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -16,11 +17,15 @@ from server.alerts.quiet_hours import ET
 from server.db import get_setting
 from server.jobs import (
     earnings_sync,
+    factor_pca,
+    factor_refresh,
+    historical_bars_warmup,
     massive_news_poll,
     profile_text_refresh,
     pushover_ack,
     quiet_digest,
     quote_stream,
+    residual_intraday,
     threshold_eval,
     tick_aggregator,
     x_account_poll,
@@ -62,6 +67,21 @@ def start() -> None:
     dh, dm = (int(x) for x in digest_hhmm.split(":"))
     scheduler.add_job(quiet_digest.run, "cron", hour=dh, minute=dm,
                       timezone=ET, id="quiet_digest_send")
+
+    # Phase 3: factor exposures. One-shot warmup + PCA on startup so the Context
+    # tab has data day one; EOD OLS refresh; intraday residual every 60s.
+    scheduler.add_job(historical_bars_warmup.run, "date",
+                      run_date=datetime.now() + timedelta(seconds=5),
+                      id="historical_bars_warmup")
+    scheduler.add_job(factor_pca.run, "date",
+                      run_date=datetime.now() + timedelta(seconds=30),
+                      id="factor_pca_startup")
+    scheduler.add_job(factor_pca.run, "cron", month="1,4,7,10", day=1,
+                      hour=3, minute=0, id="factor_pca_quarterly")
+    scheduler.add_job(factor_refresh.run, "cron", hour=16, minute=30,
+                      timezone=ET, id="factor_refresh")
+    scheduler.add_job(residual_intraday.run, "interval", seconds=60,
+                      id="residual_intraday")
 
     scheduler.start()
     log.info("scheduler started with jobs: %s", [j.id for j in scheduler.get_jobs()])

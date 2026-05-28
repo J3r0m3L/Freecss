@@ -1489,7 +1489,15 @@ deleveraging-watch/
     ├── test_api_social.py               (/api/social/accounts CRUD)
     ├── test_api_notes.py                (notes CRUD + from-news/from-social + related)
     ├── test_api_earnings_usage.py       (/api/earnings + /api/usage)
-    └── test_api_watchlist_phase2.py     (watchlist-add runs §10.1 pipeline)
+    ├── test_api_watchlist_phase2.py     (watchlist-add runs §10.1 pipeline)
+    # Phase 3 coverage (factor exposures)
+    ├── test_multitest.py                (BH-FDR @ q=0.05)
+    ├── test_bucket_pca.py               (PCA over candidate basket → rep ETF)
+    ├── test_regression.py               (OLS β, α, R², p, ρ on aligned returns)
+    ├── test_residual.py                 (intraday actual − expected)
+    ├── test_adapters_daily.py           (massive_daily stub: correlated stub bars)
+    ├── test_jobs_factor.py              (warmup → PCA → refresh → residual chain)
+    └── test_api_exposures.py            (/api/instrument/<sym>/exposures contract)
 ```
 
 ---
@@ -1503,7 +1511,7 @@ Testing is a per-phase discipline, not a phase of its own: every phase ships pyt
 | 0 | v1 | done | Skeleton |
 | 1 | v1 | done | Live quotes + price/volume/spread thresholds |
 | 2 | v1 | done | News + social pipeline (Massive news + X) + earnings |
-| 3 | v1 | not started | Factor exposures (80-bucket PCA + BH-FDR) |
+| 3 | v1 | done | Factor exposures (80-bucket PCA + BH-FDR) |
 | 4 | v1 | not started | Notes (per-symbol + global) + liquidity layer + ops polish |
 | 5 | v2 | future | Bucket-level alerts + candidate-basket editor |
 | 6 | v2 (paid) | future | Options Advanced — requires +$199/mo Massive Options subscription |

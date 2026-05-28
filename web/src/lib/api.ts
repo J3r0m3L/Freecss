@@ -101,6 +101,32 @@ export interface EarningsRow {
   rev_estimate: number | null;
 }
 
+// Factor exposure for the Context tab (§9, §11.C).
+export interface Exposure {
+  bucket_id: number;
+  bucket_label: string;
+  bucket_kind: string;
+  representative: string;
+  pc1_var_explained: number | null;
+  beta: number;
+  intercept: number;
+  r_squared: number;
+  p_value: number;
+  q_value: number | null;
+  significant: boolean;
+  correlation: number;
+  last_residual: number | null;
+  window_days: number;
+  computed_at: string;
+}
+
+export interface ExposuresResp {
+  symbol: string;
+  watch_id: number;
+  significant_only: boolean;
+  exposures: Exposure[];
+}
+
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -129,6 +155,10 @@ export const api = {
   bars: (symbol: string, tf = "1m") =>
     fetch(`/api/instrument/${symbol}/bars?tf=${tf}`).then(
       (r) => json<{ symbol: string; tf: string; bars: Bar[] }>(r),
+    ),
+  exposures: (symbol: string, significantOnly = true) =>
+    fetch(`/api/instrument/${symbol}/exposures?significant_only=${significantOnly}`).then(
+      (r) => json<ExposuresResp>(r),
     ),
 
   // News + social (Phase 2)

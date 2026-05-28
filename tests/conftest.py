@@ -211,6 +211,67 @@ def seed_news():
     return _mk
 
 
+# -------------------- Phase 3 fixtures --------------------
+
+
+@pytest.fixture
+def seed_daily_bars():
+    """Write a list of (date, close) pairs into bar_daily for one instrument.
+
+    Pass `closes` as a list of floats; dates auto-fill backward from `end_date`.
+    Returns the list of date isoformats written (ASC).
+    """
+    from datetime import date, timedelta
+
+    from server.db import execute
+
+    def _mk(instrument_id: int, closes: list[float], *,
+            end_date: date | None = None) -> list[str]:
+        end = end_date or date.today()
+        n = len(closes)
+        dates = [(end - timedelta(days=(n - 1 - i))).isoformat() for i in range(n)]
+        prev = None
+        for d, c in zip(dates, closes):
+            o = prev if prev is not None else c
+            execute(
+                "INSERT OR REPLACE INTO bar_daily(instrument_id, date, o, h, l, c, v, vwap) "
+                "VALUES(?,?,?,?,?,?,?,?)",
+                (instrument_id, d, o, max(o, c), min(o, c), c, 1_000_000, (o + c) / 2),
+            )
+            prev = c
+        return dates
+
+    return _mk
+
+
+@pytest.fixture
+def seed_correlated_daily_bars(seed_daily_bars):
+    """Write a basket of date-aligned bars with a shared market factor.
+
+    Each (iid, beta, idio_vol) produces returns = beta * market + N(0, idio).
+    Useful for PCA + regression tests — PCA picks the basket member whose beta
+    × variance contribution is largest; OLS recovers the per-pair β / ρ.
+    """
+    import random
+
+    def _mk(specs: list[tuple[int, float, float]], *,
+            n: int = 60, seed: int = 1, start: float = 100.0) -> dict[int, list[str]]:
+        rng = random.Random(seed)
+        market = [rng.gauss(0.0, 0.01) for _ in range(n)]
+        out: dict[int, list[str]] = {}
+        for iid, beta, idio in specs:
+            px = start
+            closes: list[float] = []
+            for i in range(n):
+                ret = beta * market[i] + rng.gauss(0.0, idio)
+                px = max(0.5, px * (1.0 + ret))
+                closes.append(px)
+            out[iid] = seed_daily_bars(iid, closes)
+        return out
+
+    return _mk
+
+
 @pytest.fixture
 def seed_social_post():
     """Insert a social_post row; returns its id. Inserts the X account if missing."""

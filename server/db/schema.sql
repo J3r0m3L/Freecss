@@ -58,6 +58,17 @@ CREATE TABLE IF NOT EXISTS bar_1m (
   PRIMARY KEY (instrument_id, ts)
 ) WITHOUT ROWID;
 
+-- Daily bars (Phase 3). Bulk-loaded on first run, then refreshed EOD. Required
+-- by factor_pca (PCA over ~6mo of returns) and factor_refresh (rolling-window OLS).
+CREATE TABLE IF NOT EXISTS bar_daily (
+  instrument_id INTEGER NOT NULL REFERENCES instrument(id),
+  date          DATE NOT NULL,
+  o REAL, h REAL, l REAL, c REAL,
+  v INTEGER, vwap REAL,
+  PRIMARY KEY (instrument_id, date)
+) WITHOUT ROWID;
+CREATE INDEX IF NOT EXISTS idx_bar_daily_recent ON bar_daily(instrument_id, date DESC);
+
 -- Alert events that fired.
 CREATE TABLE IF NOT EXISTS alert (
   id               INTEGER PRIMARY KEY,

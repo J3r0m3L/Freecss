@@ -197,3 +197,15 @@ a.backlink:hover { color: var(--text); }
 
 .earnings-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .earnings-table th, .earnings-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+
+/* Context tab — factor exposures (§9, §11.C) */
+.context-controls { padding: 4px 0 10px; font-size: 12px; color: var(--muted); }
+.context-controls input { margin-right: 4px; }
+.exposures-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.exposures-table th, .exposures-table td {
+  text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border);
+}
+.exposures-table th.num, .exposures-table td.num { text-align: right; }
+.exposures-table tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+.exposures-table td.adverse  { color: var(--down); font-weight: 600; }
+.exposures-table td.aligned  { color: var(--up); }
