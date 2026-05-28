@@ -17,6 +17,7 @@ from server.alerts.quiet_hours import ET
 from server.db import get_setting
 from server.jobs import (
     archive_ticks,
+    bucket_alerts,
     earnings_sync,
     factor_pca,
     factor_refresh,
@@ -84,6 +85,10 @@ def start() -> None:
                       timezone=ET, id="factor_refresh")
     scheduler.add_job(residual_intraday.run, "interval", seconds=60,
                       id="residual_intraday")
+
+    # Phase 5: bucket-level deleveraging alerts. Default ON (gated in settings).
+    scheduler.add_job(bucket_alerts.run, "interval", seconds=60,
+                      id="bucket_alerts")
 
     # Phase 4: liquidity layer + nightly archive.
     scheduler.add_job(liquidity_refresh.run, "cron", hour=16, minute=35,

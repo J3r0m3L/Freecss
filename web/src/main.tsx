@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Grid } from "./routes/Grid";
 import { Instrument } from "./routes/Instrument";
+import { Buckets } from "./routes/Buckets";
 import { News } from "./routes/News";
 import { Notes } from "./routes/Notes";
 import { Settings } from "./routes/Settings";
@@ -20,6 +21,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/instrument/:symbol" element={<Instrument />} />
           <Route path="/news" element={<News />} />
           <Route path="/notes" element={<Notes />} />
+          <Route path="/buckets" element={<Buckets />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Grid />} />
         </Routes>

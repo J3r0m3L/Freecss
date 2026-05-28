@@ -886,14 +886,19 @@ For the selected watched symbol, show only `(symbol, rep)` pairs that **passed B
 
 Sign convention: residual is colored red if **adverse to thesis direction**, green if aligned. The big visible adverse-residual cells are the things to investigate.
 
-### Factor-level deleveraging alerts (v2)
+### Factor-level deleveraging alerts (Phase 5 — ON by default)
 
-Beyond the per-symbol price/volume/spread rules (§8), we can alert on **bucket-level** moves once the regression layer is in place:
+Beyond the per-symbol price/volume/spread rules (§8), bucket-level moves fire alerts via the same engine:
 
-- For each bucket representative, compute z-score of today's return vs trailing 60d intraday distribution.
-- For each watched symbol with `significant=1` against that bucket: if `sign(β) · sign(bucket_return) · sign(thesis) < 0` (i.e., the bucket move is adverse to the user's position via that exposure) AND `|z_bucket| > 3`, fire a `warn`.
+- For each bucket representative, the `bucket_alerts` job (60s cadence) computes today's intraday z-score vs the trailing 60d daily return distribution (`server/analytics/bucket_zscore.py`).
+- For each watched symbol with `factor_exposure.significant=1` against that bucket: if `sign(β) · sign(bucket_return) · sign(thesis) < 0` (the bucket move is adverse to the position via that exposure) AND `|z_bucket| ≥ threshold`, fire through `engine.fire()`.
+- Severity tiers (configurable in Settings under `bucket_alerts`):
+  - `|z| ≥ 3` → `warn`
+  - `|z| ≥ 4` → `high`
+  - `|z| ≥ 5` → `critical`
+- The alert `kind` is namespaced as `factor:<bucket_label>` so the engine's per-(symbol, kind) 15-minute dedup naturally separates simultaneous alerts on different buckets affecting the same watch.
 
-Held out of v1 to avoid alert tuning before we know baseline noise.
+**Gating.** `setting('global').bucket_alerts.enabled` defaults to **true** (Phase 5 user choice). Setting it to `false` short-circuits the job — no rows written, no broadcast, no Pushover. Recommended workflow if alert volume is too noisy in the first week: flip to `false` in Settings, raise `z_warn` to 3.5 or 4, flip back on.
 
 ### Refresh cadence
 
@@ -1503,7 +1508,13 @@ deleveraging-watch/
     ├── test_jobs_liquidity.py           (liquidity_refresh writes per-instrument)
     ├── test_api_liquidity.py            (/api/instrument/<sym>/liquidity + position size)
     ├── test_jobs_archive_ticks.py       (hot window kept, cold ticks archived)
-    └── test_api_notes_phase4.py         (from-alert, DELETE, symbol denormalization)
+    ├── test_api_notes_phase4.py         (from-alert, DELETE, symbol denormalization)
+    # Phase 5 coverage (bucket-level alerts + candidate-basket editor)
+    ├── test_bucket_zscore.py            (today's rep return vs 60d distribution)
+    ├── test_bucket_rules.py             (severity ladder + sign(β)·sign(ret)·sign(thesis) adversity)
+    ├── test_engine_factor_kind.py       (factor:<bucket> dedup + payload rendering)
+    ├── test_jobs_bucket_alerts.py       (off-toggle, default-ON, z-cache, per-bucket dedup)
+    └── test_api_buckets.py              (candidate CRUD + on-demand refit_pca)
 ```
 
 ---
@@ -1519,7 +1530,7 @@ Testing is a per-phase discipline, not a phase of its own: every phase ships pyt
 | 2 | v1 | done | News + social pipeline (Massive news + X) + earnings |
 | 3 | v1 | done | Factor exposures (80-bucket PCA + BH-FDR) |
 | 4 | v1 | done | Notes (per-symbol + global) + liquidity layer + ops polish |
-| 5 | v2 | future | Bucket-level alerts + candidate-basket editor |
+| 5 | v2 | done | Bucket-level alerts + candidate-basket editor (alerts ON by default) |
 | 6 | v2 (paid) | future | Options Advanced — requires +$199/mo Massive Options subscription |
 | 7 | v3 (paid) | future | Futures Advanced — requires Massive Futures subscription |
 | 8 | future | future | Generalization (more thematics, Haiku rationale add-back, twitter-roberta for X if FinBERT quality is an issue) |

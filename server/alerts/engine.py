@@ -36,6 +36,13 @@ _KIND_LABEL = {
 }
 
 
+def _label_for_kind(kind: str) -> str:
+    """Resolve kind → human label, honoring the `factor:<bucket>` namespace."""
+    if kind.startswith("factor:"):
+        return f"factor move — {kind.split(':', 1)[1]}"
+    return _KIND_LABEL.get(kind, kind)
+
+
 def _bull_bear(direction: str) -> str:
     return "🐂" if direction == "BULL" else "🐻"
 
@@ -55,7 +62,7 @@ def _suppressed_by_dedup(instrument_id: int, hit: RuleHit) -> bool:
 
 def _title_body(symbol: str, direction: str, hit: RuleHit) -> tuple[str, str]:
     bb = _bull_bear(direction)
-    label = _KIND_LABEL.get(hit.kind, hit.kind)
+    label = _label_for_kind(hit.kind)
     p = hit.payload
     title = f"{symbol} — {label} vs {bb} thesis"
     if hit.kind == "px_jump":
@@ -71,6 +78,10 @@ def _title_body(symbol: str, direction: str, hit: RuleHit) -> tuple[str, str]:
         title = f"{symbol} — {label}: {p.get('title', '')[:180]}"
         body = (f"sent={p.get('sentiment'):+.2f} rel={p.get('relevance'):.2f} "
                 f"({p.get('relevance_source')}) vs {bb}")
+    elif hit.kind.startswith("factor:"):
+        body = (f"rep {p['rep_symbol']} {p['bucket_return'] * 100:+.2f}% "
+                f"(z={p['z']:+.2f}σ); β={p['beta']:+.2f} → "
+                f"{'adverse' if hit.adverse else 'aligned'} vs {bb}")
     else:
         body = json.dumps(p)
     return title, body

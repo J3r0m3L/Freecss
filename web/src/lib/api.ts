@@ -147,6 +147,39 @@ export interface RelatedNote {
   cosine: number;
 }
 
+// Phase 5: candidate-basket editor.
+export interface BucketSummary {
+  id: number;
+  kind: string;
+  label: string;
+  active: boolean;
+  pc1_var_explained: number | null;
+  selected_at: string | null;
+  representative_id: number | null;
+  representative_symbol: string | null;
+}
+
+export interface BucketCandidate {
+  instrument_id: number;
+  symbol: string;
+  pc1_loading: number | null;
+  last_pca_at: string | null;
+  is_representative: boolean;
+}
+
+export interface BucketDetail extends BucketSummary {
+  candidates: BucketCandidate[];
+}
+
+export interface PcaRefitResult {
+  ok: boolean;
+  representative_id: number;
+  representative_symbol: string;
+  pc1_var_explained: number;
+  n_obs: number;
+  note: string;
+}
+
 export interface Liquidity {
   symbol: string;
   computed_at: string | null;
@@ -244,6 +277,24 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ thresholds: { position_size: positionSize } }),
     }).then((r) => json<{ ok: boolean }>(r)),
+
+  // Buckets / candidate-basket editor (Phase 5)
+  buckets: () => fetch("/api/buckets").then((r) => json<BucketSummary[]>(r)),
+  bucket: (id: number) => fetch(`/api/buckets/${id}`).then((r) => json<BucketDetail>(r)),
+  addCandidate: (bucketId: number, symbol: string) =>
+    fetch(`/api/buckets/${bucketId}/candidates`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ symbol }),
+    }).then((r) => json<{ ok: boolean; symbol: string; instrument_id: number }>(r)),
+  removeCandidate: (bucketId: number, symbol: string) =>
+    fetch(`/api/buckets/${bucketId}/candidates/${symbol}`, { method: "DELETE" }).then(
+      (r) => json<{ ok: boolean }>(r),
+    ),
+  refitPca: (bucketId: number) =>
+    fetch(`/api/buckets/${bucketId}/refit_pca`, { method: "POST" }).then(
+      (r) => json<PcaRefitResult>(r),
+    ),
 
   // News + social (Phase 2)
   news: (params: {

@@ -31,6 +31,15 @@ _DEFAULTS = {
     },
     "news_rail": {"enabled": True, "min_relevance": 0.5},
     "exit_liquidity": {"participation": 0.10},
+    # Phase 5: bucket-level deleveraging alerts. ON by default per user choice
+    # (DESIGN.md §9 originally held these off-by-default "until baseline noise
+    # is observed"; gating lives here so a single toggle reverts that policy).
+    "bucket_alerts": {
+        "enabled": True,
+        "z_warn": 3.0,
+        "z_high": 4.0,
+        "z_critical": 5.0,
+    },
 }
 
 
