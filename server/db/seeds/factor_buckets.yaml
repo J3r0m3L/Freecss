@@ -1,0 +1,117 @@
+# 80-bucket factor/thematic universe (DESIGN.md §9).
+# Each bucket is a concept tracked via a candidate basket of ETFs. The single
+# `representative` ETF is chosen later by PCA (§3.4, factor_pca job) — this seed
+# only declares the candidate baskets; representative_id stays NULL until PCA runs.
+# `kind` ∈ index | factor | sector | sub_sector | intl | commodity | thematic
+buckets:
+  # --- Broad equity indices (5) ---
+  - {kind: index, label: "S&P 500",                    candidates: [SPY, IVV, VOO]}
+  - {kind: index, label: "Nasdaq-100",                 candidates: [QQQ, QQQM]}
+  - {kind: index, label: "Russell 2000 / small-cap",   candidates: [IWM, IJR, VB, VTWO]}
+  - {kind: index, label: "Mid-cap",                    candidates: [IJH, MDY, VO]}
+  - {kind: index, label: "Equal-weight S&P",           candidates: [RSP, EQAL]}
+
+  # --- Volatility regime (1) ---
+  - {kind: factor, label: "VIX",                       candidates: [VIXY, VXX, UVXY]}
+
+  # --- Rates curve (5) ---
+  - {kind: factor, label: "Short rates (front end)",   candidates: [SHV, BIL]}
+  - {kind: factor, label: "7-10Y rates (belly)",       candidates: [IEF, VGIT]}
+  - {kind: factor, label: "20+Y rates (long end)",     candidates: [TLT, VGLT, EDV]}
+  - {kind: factor, label: "TIPS / inflation-linked",   candidates: [TIP, SCHP, VTIP]}
+  - {kind: factor, label: "Mortgage-backed",           candidates: [MBB, VMBS]}
+
+  # --- Credit (4) ---
+  - {kind: factor, label: "High Yield",                candidates: [HYG, JNK]}
+  - {kind: factor, label: "Investment Grade",          candidates: [LQD, VCIT]}
+  - {kind: factor, label: "EM Debt (USD)",             candidates: [EMB, PCY]}
+  - {kind: factor, label: "Bank Loans / Floating Rate", candidates: [BKLN, SRLN]}
+
+  # --- FX (4) ---
+  - {kind: factor, label: "Dollar (DXY)",              candidates: [UUP, USDU]}
+  - {kind: factor, label: "Yen",                       candidates: [FXY]}
+  - {kind: factor, label: "Euro",                      candidates: [FXE]}
+  - {kind: factor, label: "Yuan",                      candidates: [CYB]}
+
+  # --- Style factors (7) ---
+  - {kind: factor, label: "Value",                     candidates: [VLUE, IWD, IUSV, VTV]}
+  - {kind: factor, label: "Momentum",                  candidates: [MTUM, VFMO, IMTM, JMOM, PDP, FDMO]}
+  - {kind: factor, label: "Quality",                   candidates: [QUAL, SPHQ, JQUA]}
+  - {kind: factor, label: "Low Vol",                   candidates: [USMV, SPLV, EFAV]}
+  - {kind: factor, label: "Growth",                    candidates: [IWF, IUSG, VUG]}
+  - {kind: factor, label: "Dividend / High-income",    candidates: [VYM, SCHD, DVY, NOBL]}
+  - {kind: factor, label: "High Beta",                 candidates: [SPHB]}
+
+  # --- GICS sectors (11) ---
+  - {kind: sector, label: "Info Tech",                 candidates: [XLK, VGT, FTEC]}
+  - {kind: sector, label: "Comm Services",             candidates: [XLC, VOX]}
+  - {kind: sector, label: "Cons Discretionary",        candidates: [XLY, VCR, IYC]}
+  - {kind: sector, label: "Cons Staples",              candidates: [XLP, VDC, IYK]}
+  - {kind: sector, label: "Financials",                candidates: [XLF, VFH, IYF]}
+  - {kind: sector, label: "Healthcare",                candidates: [XLV, VHT, IYH]}
+  - {kind: sector, label: "Industrials",               candidates: [XLI, VIS, IYJ]}
+  - {kind: sector, label: "Energy",                    candidates: [XLE, VDE, IYE, FENY]}
+  - {kind: sector, label: "Materials",                 candidates: [XLB, VAW, IYM]}
+  - {kind: sector, label: "Real Estate",               candidates: [XLRE, VNQ, IYR]}
+  - {kind: sector, label: "Utilities",                 candidates: [XLU, VPU, IDU]}
+
+  # --- Sub-sectors / industry slices (6) ---
+  - {kind: sub_sector, label: "Banks (broad)",         candidates: [KBE, KBWB]}
+  - {kind: sub_sector, label: "Regional banks",        candidates: [KRE]}
+  - {kind: sub_sector, label: "Homebuilders",          candidates: [XHB, ITB]}
+  - {kind: sub_sector, label: "Transports",            candidates: [IYT]}
+  - {kind: sub_sector, label: "Pharma",                candidates: [PJP, IHE]}
+  - {kind: sub_sector, label: "Retail",                candidates: [XRT]}
+
+  # --- International equities (6) ---
+  - {kind: intl, label: "Developed ex-US",             candidates: [EFA, VEA, IEFA]}
+  - {kind: intl, label: "Emerging markets",            candidates: [EEM, VWO, IEMG]}
+  - {kind: intl, label: "Europe",                      candidates: [VGK, EZU, FEZ]}
+  - {kind: intl, label: "Japan",                       candidates: [EWJ, DXJ]}
+  - {kind: intl, label: "China (broad)",               candidates: [MCHI, FXI]}
+  - {kind: intl, label: "China tech",                  candidates: [KWEB, CQQQ]}
+
+  # --- Commodities (7) ---
+  - {kind: commodity, label: "Broad commodities",      candidates: [DBC, GSG, PDBC]}
+  - {kind: commodity, label: "Oil",                    candidates: [USO, BNO, DBO]}
+  - {kind: commodity, label: "Natural gas",            candidates: [UNG, BOIL]}
+  - {kind: commodity, label: "Gold",                   candidates: [GLD, IAU, GLDM, SGOL]}
+  - {kind: commodity, label: "Silver",                 candidates: [SLV, SIVR]}
+  - {kind: commodity, label: "Industrial metals / Copper", candidates: [DBB, CPER]}
+  - {kind: commodity, label: "Agriculture",            candidates: [DBA, MOO]}
+
+  # --- Thematics — tech-adjacent (7) ---
+  - {kind: thematic, label: "Semis",                   candidates: [SOXX, SMH, XSD, PSI]}
+  - {kind: thematic, label: "AI",                      candidates: [BOTZ, IRBO, ARTY, AIQ, ROBT, CHAT, THNQ, WTAI]}
+  - {kind: thematic, label: "Cloud/Software",          candidates: [IGV, WCLD, CLOU, SKYY]}
+  - {kind: thematic, label: "Cyber",                   candidates: [HACK, CIBR, BUG]}
+  - {kind: thematic, label: "Fintech",                 candidates: [FINX, ARKF]}
+  - {kind: thematic, label: "5G / next-gen telecom",   candidates: [FIVG, NXTG]}
+  - {kind: thematic, label: "Quantum",                 candidates: [QTUM]}
+
+  # --- Thematics — energy & clean (5) ---
+  - {kind: thematic, label: "Clean energy (broad)",    candidates: [ICLN, QCLN, PBW]}
+  - {kind: thematic, label: "Solar",                   candidates: [TAN]}
+  - {kind: thematic, label: "Wind",                    candidates: [FAN]}
+  - {kind: thematic, label: "Uranium / Nuclear",       candidates: [URA, URNM, NLR]}
+  - {kind: thematic, label: "Lithium / EV batteries",  candidates: [LIT]}
+
+  # --- Thematics — biology / health (3) ---
+  - {kind: thematic, label: "Biotech",                 candidates: [IBB, XBI, BBH, FBT]}
+  - {kind: thematic, label: "Genomics",                candidates: [ARKG, IDNA]}
+  - {kind: thematic, label: "Medical devices",         candidates: [IHI]}
+
+  # --- Thematics — defense / space (2) ---
+  - {kind: thematic, label: "Defense",                 candidates: [ITA, XAR, PPA]}
+  - {kind: thematic, label: "Space",                   candidates: [ARKX, UFO]}
+
+  # --- Thematics — consumer / lifestyle (4) ---
+  - {kind: thematic, label: "Travel / leisure",        candidates: [JETS, PEJ, AWAY]}
+  - {kind: thematic, label: "Gaming / esports",        candidates: [HERO, ESPO, NERD]}
+  - {kind: thematic, label: "Sports betting",          candidates: [BETZ]}
+  - {kind: thematic, label: "Cannabis",                candidates: [MSOS, MJ]}
+
+  # --- Thematics — crypto / digital (3) ---
+  - {kind: thematic, label: "Bitcoin",                 candidates: [IBIT, FBTC, BTCO, BITB, ARKB]}
+  - {kind: thematic, label: "Ethereum",                candidates: [ETHA, FETH]}
+  - {kind: thematic, label: "Blockchain / crypto-adjacent", candidates: [WGMI, BKCH, BLOK]}

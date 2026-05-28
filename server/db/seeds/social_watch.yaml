@@ -1,0 +1,27 @@
+# Default curated X accounts (DESIGN.md §10.3). Loaded into social_account_watch
+# on first startup if the table is empty; thereafter the DB is the source of
+# truth and Settings (§11.E) is the edit surface.
+#   - `handle` is stored WITHOUT the leading '@'.
+#   - `label` is the human-friendly display string (editable, not load-bearing).
+#   - external_id (numeric X user_id) is resolved lazily via one User: Read per
+#     handle on first poll / on add (Phase 2) — not stored in this seed.
+x_accounts:
+  # US executive + economic
+  - {handle: realDonaldTrump,  label: "Trump"}
+  - {handle: POTUS,            label: "President of the United States"}
+  - {handle: WhiteHouse,       label: "White House"}
+  - {handle: SecTreasury,      label: "US Treasury Secretary"}
+  # Central banks
+  - {handle: federalreserve,   label: "Federal Reserve"}
+  - {handle: ECB,              label: "European Central Bank"}
+  - {handle: bankofengland,    label: "Bank of England"}
+  - {handle: bankofjapan,      label: "Bank of Japan"}
+  # Regulators
+  - {handle: SECGov,           label: "SEC"}
+  - {handle: TheJusticeDept,   label: "DOJ"}
+  - {handle: FTC,              label: "FTC"}
+  # Top financial journalists
+  - {handle: DeItaone,         label: "Walter Bloomberg (DeItaone)"}
+  - {handle: Carl_Quintanilla, label: "Carl Quintanilla, CNBC"}
+  - {handle: LisaAbramowicz1,  label: "Lisa Abramowicz, Bloomberg"}
+  - {handle: zerohedge,        label: "ZeroHedge"}

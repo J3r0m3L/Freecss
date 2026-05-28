@@ -1,0 +1,27 @@
+# Secrets
+.env
+
+# Database (WAL artifacts included)
+*.db
+*.db-wal
+*.db-shm
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Node / frontend
+web/node_modules/
+web/dist/
+
+# Logs / archives
+*.log
+archive/*.parquet
+
+# OS
+.DS_Store

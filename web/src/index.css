@@ -1,0 +1,90 @@
+/* Visual style per DESIGN.md §11: Bloomberg Terminal re-skinned by Linear/Vercel.
+   Dark, information-dense, color reserved strictly for signal. Tailwind/shadcn
+   replace this hand-rolled CSS as the UI fills out in later phases. */
+:root {
+  --bg: #0a0a0a;          /* zinc-950 */
+  --card: #18181b;        /* zinc-900 */
+  --border: #27272a;      /* zinc-800 */
+  --text: #e4e4e7;        /* zinc-200 */
+  --muted: #71717a;       /* zinc-500 */
+  --up: #22c55e;          /* aligned / positive */
+  --down: #ef4444;        /* adverse / negative */
+  --warn: #f59e0b;        /* amber: warn/high */
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+}
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.up { color: var(--up); }
+.down { color: var(--down); }
+
+header.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+header.topbar h1 { font-size: 14px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+.topbar .spacer { flex: 1; }
+.badge {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.dot.live { background: var(--up); }
+.dot.stalled { background: var(--warn); }
+.dot.no_data { background: var(--muted); }
+
+.add-form { display: flex; gap: 6px; }
+.add-form input, .add-form select, .add-form button {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 13px;
+  font-family: var(--sans);
+}
+.add-form input { width: 90px; text-transform: uppercase; }
+.add-form button { cursor: pointer; }
+.add-form button:hover { border-color: var(--muted); }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+  padding: 12px 16px;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.card:hover { border-color: var(--muted); }
+.card .row { display: flex; justify-content: space-between; align-items: baseline; }
+.card .sym { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; }
+.card .price { font-family: var(--mono); font-size: 16px; font-variant-numeric: tabular-nums; }
+.card .meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.card .meta .mono { font-size: 12px; }
+.empty { padding: 48px 16px; color: var(--muted); }
