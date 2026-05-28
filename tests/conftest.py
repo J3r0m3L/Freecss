@@ -17,6 +17,10 @@ _TMPDIR = Path(tempfile.mkdtemp(prefix="dw-tests-"))
 os.environ["DW_DB_PATH"] = str(_TMPDIR / "test.db")
 # Don't shell out to Pushover or any HTTP service from tests.
 os.environ.setdefault("DW_NOTIFIER", "console")
+# Phase 2: always use the deterministic stub backends — no 400MB FinBERT
+# checkpoint, no Anthropic network calls, no external HTTP.
+os.environ.setdefault("DW_FINBERT_BACKEND", "stub")
+os.environ.setdefault("DW_PROFILE_TEXT_BACKEND", "stub")
 
 import pytest  # noqa: E402
 
@@ -59,16 +63,24 @@ def client(app):
 
 @pytest.fixture
 def make_watch():
-    """Insert an instrument + active watch; return (instrument_id, watch_id)."""
-    from server.db import execute
+    """Insert an instrument + active watch; return (instrument_id, watch_id).
+
+    If the symbol already exists (e.g. seeded as a factor_bucket candidate like
+    SPY/QQQ), the existing instrument row is reused — just a fresh watch attaches.
+    """
+    from server.db import execute, one
 
     def _mk(symbol: str, direction: str = "BULL") -> tuple[int, int]:
-        cur = execute(
-            "INSERT INTO instrument(symbol, display_name, asset_class, data_adapter) "
-            "VALUES(?,?,?,?)",
-            (symbol, symbol, "equity", "stub"),
-        )
-        iid = cur.lastrowid
+        existing = one("SELECT id FROM instrument WHERE symbol=?", (symbol,))
+        if existing:
+            iid = existing["id"]
+        else:
+            cur = execute(
+                "INSERT INTO instrument(symbol, display_name, asset_class, data_adapter) "
+                "VALUES(?,?,?,?)",
+                (symbol, symbol, "equity", "stub"),
+            )
+            iid = cur.lastrowid
         cur = execute(
             "INSERT INTO watch(instrument_id, direction) VALUES(?,?)",
             (iid, direction),
@@ -128,3 +140,113 @@ def fake_socketio():
             self.emissions.append((event, payload))
 
     return _Fake()
+
+
+# -------------------- Phase 2 fixtures --------------------
+
+
+@pytest.fixture
+def make_watch_with_profile(make_watch):
+    """Like make_watch, but also persists a meta_json + FinBERT profile_embedding.
+
+    Returns (instrument_id, watch_id). Uses the deterministic stub FinBERT, so
+    the embedding is content-keyed and stable across test runs.
+    """
+    import json
+
+    from server.db import execute
+    from server.nlp.finbert import embedding_to_blob, get_finbert
+
+    def _mk(symbol: str, direction: str = "BULL", *,
+            sector: str = "Technology", industry: str = "Software",
+            country: str = "US",
+            profile_text: str = "Tech company exposed to rates and tariffs."):
+        iid, wid = make_watch(symbol, direction)
+        meta = {"sector": sector, "industry": industry, "country": country,
+                "description": profile_text}
+        emb = get_finbert().score(profile_text).embedding
+        execute(
+            "UPDATE instrument SET meta_json=?, meta_refreshed_at=CURRENT_TIMESTAMP, "
+            "profile_text=?, profile_embedding=? WHERE id=?",
+            (json.dumps(meta), profile_text, embedding_to_blob(emb), iid),
+        )
+        return iid, wid
+
+    return _mk
+
+
+@pytest.fixture
+def seed_news():
+    """Insert a news row; returns its id. Defaults to a high-relevance adverse hit."""
+    import json as _json
+    from datetime import datetime, timezone
+
+    from server.db import execute
+
+    def _mk(*, title: str = "AAPL plunges on regulatory probe",
+            snippet: str = "regulators announce investigation into AAPL",
+            tickers: list[str] | None = None,
+            relevance: float = 0.96,
+            relevance_source: str = "symbol",
+            sentiment: float = -0.85,
+            sentiment_label: str = "negative",
+            sentiment_conf: float = 0.93,
+            url: str | None = None,
+            massive_id: str | None = None,
+            published_at: str | None = None):
+        now = datetime.now(timezone.utc).isoformat()
+        cur = execute(
+            "INSERT INTO news(fetched_at, source, url, title, snippet, published_at, "
+            "massive_id, relevance, relevance_source, sentiment, sentiment_label, "
+            "sentiment_conf, tickers_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (now, "StubWire",
+             url or f"https://example.com/{abs(hash(title))}",
+             title, snippet, published_at or now,
+             massive_id or f"stub-{abs(hash(title))}",
+             relevance, relevance_source, sentiment, sentiment_label,
+             sentiment_conf, _json.dumps(tickers or ["AAPL"])),
+        )
+        return cur.lastrowid
+
+    return _mk
+
+
+@pytest.fixture
+def seed_social_post():
+    """Insert a social_post row; returns its id. Inserts the X account if missing."""
+    import json as _json
+    from datetime import datetime, timezone
+
+    from server.db import execute, one
+
+    def _mk(*, handle: str = "SecTreasury",
+            body: str = "Announcing new tariffs affecting $AAPL imports",
+            tickers: list[str] | None = None,
+            relevance: float = 0.9,
+            relevance_source: str = "symbol",
+            sentiment: float = -0.7,
+            sentiment_label: str = "negative",
+            sentiment_conf: float = 0.88):
+        acct = one("SELECT id FROM social_account_watch WHERE handle=?", (handle,))
+        if acct is None:
+            cur = execute(
+                "INSERT INTO social_account_watch(source, handle, label) "
+                "VALUES('x',?,?)", (handle, handle),
+            )
+            account_id = cur.lastrowid
+        else:
+            account_id = acct["id"]
+        now = datetime.now(timezone.utc).isoformat()
+        cur = execute(
+            "INSERT INTO social_post(source, account_id, external_post_id, posted_at, "
+            "fetched_at, body, url, tickers_json, relevance, relevance_source, "
+            "sentiment, sentiment_label, sentiment_conf) "
+            "VALUES('x',?,?,?,?,?,?,?,?,?,?,?,?)",
+            (account_id, f"stub-{abs(hash(body))}", now, now, body,
+             f"https://x.com/{handle}/status/{abs(hash(body))}",
+             _json.dumps(tickers or ["AAPL"]),
+             relevance, relevance_source, sentiment, sentiment_label, sentiment_conf),
+        )
+        return cur.lastrowid
+
+    return _mk

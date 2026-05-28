@@ -1476,7 +1476,20 @@ deleveraging-watch/
     ├── test_api_watchlist.py
     ├── test_api_alerts.py
     ├── test_api_settings.py
-    └── test_api_health.py
+    ├── test_api_health.py
+    # Phase 2 coverage (news + social + earnings)
+    ├── test_finbert.py                  (stub backend, BLOB roundtrip, cosine)
+    ├── test_ticker_extract.py           (cashtag + watchlist-gated bare matches)
+    ├── test_relevance.py                (hybrid scoring, semantic discount)
+    ├── test_profile_setup.py            (Haiku-stub paragraph → embed → persist)
+    ├── test_news_rules.py               (§8 news/social_x severity ladder)
+    ├── test_adapters_news.py            (massive_news, finnhub, x_api stubs + costs)
+    ├── test_jobs_news.py                (poll → score → persist → broadcast → alert)
+    ├── test_api_news.py                 (/api/news union + filters)
+    ├── test_api_social.py               (/api/social/accounts CRUD)
+    ├── test_api_notes.py                (notes CRUD + from-news/from-social + related)
+    ├── test_api_earnings_usage.py       (/api/earnings + /api/usage)
+    └── test_api_watchlist_phase2.py     (watchlist-add runs §10.1 pipeline)
 ```
 
 ---
@@ -1487,9 +1500,9 @@ Testing is a per-phase discipline, not a phase of its own: every phase ships pyt
 
 | Phase | Version | Status | Headline |
 |---|---|---|---|
-| 0 | v1 | not started | Skeleton |
-| 1 | v1 | not started | Live quotes + price/volume/spread thresholds |
-| 2 | v1 | not started | News + social pipeline (Massive news + X) + earnings |
+| 0 | v1 | done | Skeleton |
+| 1 | v1 | done | Live quotes + price/volume/spread thresholds |
+| 2 | v1 | done | News + social pipeline (Massive news + X) + earnings |
 | 3 | v1 | not started | Factor exposures (80-bucket PCA + BH-FDR) |
 | 4 | v1 | not started | Notes (per-symbol + global) + liquidity layer + ops polish |
 | 5 | v2 | future | Bucket-level alerts + candidate-basket editor |

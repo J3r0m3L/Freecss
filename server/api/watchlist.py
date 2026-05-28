@@ -1,17 +1,22 @@
 """Watchlist CRUD (DESIGN.md §7.1).
 
-Phase 0: adding a symbol creates a bare instrument row if absent. The Massive
-ticker-reference + Finnhub /stock/profile2 enrichment (sector/industry/cap/logo
-+ profile_text/embedding) lands in Phase 2; until then meta_json stays null and
-display_name defaults to the symbol.
+Adding a symbol creates a bare instrument row if absent and synchronously runs
+the §10.1 profile-setup pipeline (Finnhub meta → Haiku profile_text → FinBERT
+embedding). With API keys present this is ~1–2s; without them, every step
+gracefully falls back to a deterministic stub so the call still returns 201.
 """
 from __future__ import annotations
+
+import logging
 
 from flask import Blueprint, jsonify, request
 
 from server import state
 from server.db import execute, one, rows
 from server.feed import feed
+from server.nlp.profile_setup import setup_profile
+
+log = logging.getLogger("deleveraging_watch.api.watchlist")
 
 bp = Blueprint("watchlist", __name__, url_prefix="/api")
 
@@ -73,8 +78,12 @@ def add_watch():
             (symbol, symbol, body.get("asset_class", "equity"), "massive"),
         )
         instrument_id = cur.lastrowid
+        _enrich_profile(instrument_id, symbol)
     else:
         instrument_id = inst["id"]
+        # Re-add of a previously soft-deleted symbol: backfill profile if it's empty.
+        if inst.get("profile_embedding") is None:
+            _enrich_profile(instrument_id, symbol)
 
     existing = one(
         "SELECT id, active FROM watch WHERE instrument_id=? ORDER BY id DESC LIMIT 1",
@@ -130,6 +139,14 @@ def update_watch(watch_id: int):
     params.append(watch_id)
     execute(f"UPDATE watch SET {', '.join(sets)} WHERE id=?", tuple(params))
     return jsonify({"ok": True})
+
+
+def _enrich_profile(instrument_id: int, symbol: str) -> None:
+    """Run the §10.1 pipeline; failures are logged but never block the add."""
+    try:
+        setup_profile(instrument_id)
+    except Exception:  # noqa: BLE001
+        log.exception("profile_setup failed for %s — added without enrichment", symbol)
 
 
 @bp.delete("/watchlist/<int:watch_id>")

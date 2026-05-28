@@ -66,6 +66,11 @@ def _title_body(symbol: str, direction: str, hit: RuleHit) -> tuple[str, str]:
         body = f"volume z={p['z']}σ (n={p.get('n_samples')})"
     elif hit.kind == "combined":
         body = f"Δ {p['pct'] * 100:+.2f}% + volume z={p.get('z')}σ — likely forced unwind"
+    elif hit.kind in ("news", "social_x"):
+        # Title from the headline/tweet itself; body carries sentiment + relevance.
+        title = f"{symbol} — {label}: {p.get('title', '')[:180]}"
+        body = (f"sent={p.get('sentiment'):+.2f} rel={p.get('relevance'):.2f} "
+                f"({p.get('relevance_source')}) vs {bb}")
     else:
         body = json.dumps(p)
     return title, body

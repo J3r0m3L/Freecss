@@ -15,6 +15,7 @@ import {
 } from "lightweight-charts";
 import { api, type Bar, type Alert } from "../lib/api";
 import { onTick } from "../lib/socket";
+import { NewsList } from "../components/NewsList";
 
 type TabId = "tape" | "micro" | "context" | "news" | "notes" | "earnings";
 
@@ -109,6 +110,17 @@ export function Instrument() {
     refetchInterval: 60_000,
   });
   const alertsQ = useQuery({ queryKey: ["alerts"], queryFn: () => api.alerts(50) });
+  const newsQ = useQuery({
+    queryKey: ["news", sym],
+    queryFn: () => api.newsForSymbol(sym, { limit: 50 }),
+    enabled: tab === "news",
+    refetchInterval: 60_000,
+  });
+  const earningsQ = useQuery({
+    queryKey: ["earnings", sym],
+    queryFn: () => api.earningsForSymbol(sym),
+    enabled: tab === "earnings",
+  });
 
   const symAlerts = useMemo(
     () => (alertsQ.data ?? []).filter((a) => a.symbol === sym),
@@ -164,6 +176,37 @@ export function Instrument() {
             ))
           )}
         </>
+      ) : tab === "news" ? (
+        newsQ.isLoading ? (
+          <div className="empty">Loading news…</div>
+        ) : (
+          <NewsList
+            items={newsQ.data ?? []}
+            empty="No news or X posts above the relevance threshold for this symbol."
+          />
+        )
+      ) : tab === "earnings" ? (
+        earningsQ.isLoading ? (
+          <div className="empty">Loading earnings…</div>
+        ) : (earningsQ.data ?? []).length === 0 ? (
+          <div className="empty">No earnings scheduled.</div>
+        ) : (
+          <table className="earnings-table">
+            <thead>
+              <tr><th>Scheduled</th><th>When</th><th>EPS est.</th><th>Rev est.</th></tr>
+            </thead>
+            <tbody>
+              {(earningsQ.data ?? []).map((e) => (
+                <tr key={e.scheduled_at}>
+                  <td>{new Date(e.scheduled_at).toLocaleString()}</td>
+                  <td>{e.when_hint ?? "—"}</td>
+                  <td>{e.eps_estimate ?? "—"}</td>
+                  <td>{e.rev_estimate ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )
       ) : (
         <div className="empty">
           The {tab} tab populates in a later phase per DESIGN.md §11.C.

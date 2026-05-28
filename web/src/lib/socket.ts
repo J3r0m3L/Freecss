@@ -15,6 +15,28 @@ export function onAlert(cb: (a: AlertEvent) => void): () => void {
   return () => socket.off("alerts", cb);
 }
 
+export function onNews(cb: (n: NewsEvent) => void): () => void {
+  socket.on("news", cb);
+  return () => socket.off("news", cb);
+}
+
+// Mirrors the REST NewsItem shape (DESIGN.md §7.2 news channel).
+export interface NewsEvent {
+  id: number;
+  kind: "news" | "x";
+  title: string | null;
+  body: string;
+  url: string | null;
+  source: string | null;
+  posted_at: string;
+  relevance: number;
+  relevance_source: "symbol" | "sector" | "semantic";
+  sentiment: number;
+  sentiment_label: "positive" | "negative" | "neutral";
+  sentiment_conf: number;
+  tickers: string[];
+}
+
 export interface TickEvent {
   symbol: string;
   ts: string;

@@ -63,6 +63,44 @@ export interface InstrumentDetail {
   snapshot: Snapshot | null;
 }
 
+// Unified news/social feed item (§7.1 /api/news, /api/instrument/:symbol/news).
+export type NewsKind = "news" | "x";
+export type SentimentLabel = "positive" | "negative" | "neutral";
+export interface NewsItem {
+  id: number;
+  kind: NewsKind;
+  title: string | null;        // null for X posts
+  body: string;
+  url: string | null;
+  source: string | null;
+  posted_at: string;
+  relevance: number;
+  relevance_source: "symbol" | "sector" | "semantic";
+  sentiment: number;           // -1..1
+  sentiment_label: SentimentLabel;
+  sentiment_conf: number;
+  tickers: string[];
+}
+
+export interface SocialAccount {
+  id: number;
+  handle: string;
+  label: string | null;
+  external_id: string | null;
+  active: boolean;
+  added_at: string;
+  last_polled_at: string | null;
+  last_post_id: string | null;
+}
+
+export interface EarningsRow {
+  symbol?: string;
+  scheduled_at: string;
+  when_hint: string | null;
+  eps_estimate: number | null;
+  rev_estimate: number | null;
+}
+
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -92,4 +130,67 @@ export const api = {
     fetch(`/api/instrument/${symbol}/bars?tf=${tf}`).then(
       (r) => json<{ symbol: string; tf: string; bars: Bar[] }>(r),
     ),
+
+  // News + social (Phase 2)
+  news: (params: {
+    source?: "news" | "x" | "all";
+    sentiment?: "any" | "pos" | "neg";
+    min_relevance?: number;
+    limit?: number;
+    ticker?: string;
+  } = {}) => {
+    const q = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      if (v !== undefined && v !== null && String(v) !== "") q.set(k, String(v));
+    }
+    return fetch(`/api/news${q.toString() ? `?${q}` : ""}`).then((r) => json<NewsItem[]>(r));
+  },
+  newsForSymbol: (symbol: string, params: {
+    source?: "news" | "x" | "all";
+    sentiment?: "any" | "pos" | "neg";
+    min_relevance?: number;
+    limit?: number;
+  } = {}) => {
+    const q = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      if (v !== undefined && v !== null && String(v) !== "") q.set(k, String(v));
+    }
+    return fetch(`/api/instrument/${symbol}/news${q.toString() ? `?${q}` : ""}`).then(
+      (r) => json<NewsItem[]>(r),
+    );
+  },
+  socialAccounts: (activeOnly = true) =>
+    fetch(`/api/social/accounts?active=${activeOnly}`).then((r) => json<SocialAccount[]>(r)),
+  addSocialAccount: (handle: string, label?: string) =>
+    fetch("/api/social/accounts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ handle, label }),
+    }).then((r) => json<SocialAccount>(r)),
+  patchSocialAccount: (id: number, patch: Partial<{ label: string; active: boolean }>) =>
+    fetch(`/api/social/accounts/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).then((r) => json<{ ok: boolean }>(r)),
+  deleteSocialAccount: (id: number) =>
+    fetch(`/api/social/accounts/${id}`, { method: "DELETE" }).then(
+      (r) => json<{ ok: boolean }>(r),
+    ),
+  earnings: (windowDays = 14) =>
+    fetch(`/api/earnings?window=${windowDays}d`).then((r) => json<EarningsRow[]>(r)),
+  earningsForSymbol: (symbol: string) =>
+    fetch(`/api/instrument/${symbol}/earnings`).then((r) => json<EarningsRow[]>(r)),
+  noteFromNews: (newsId: number, instrumentId?: number) =>
+    fetch(`/api/notes/from-news/${newsId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(instrumentId ? { instrument_id: instrumentId } : {}),
+    }).then((r) => json<{ id: number; instrument_id: number | null }>(r)),
+  noteFromSocial: (postId: number, instrumentId?: number) =>
+    fetch(`/api/notes/from-social/${postId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(instrumentId ? { instrument_id: instrumentId } : {}),
+    }).then((r) => json<{ id: number; instrument_id: number | null }>(r)),
 };

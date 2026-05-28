@@ -14,7 +14,17 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from server.alerts.quiet_hours import ET
 from server.db import get_setting
-from server.jobs import pushover_ack, quiet_digest, quote_stream, threshold_eval, tick_aggregator
+from server.jobs import (
+    earnings_sync,
+    massive_news_poll,
+    profile_text_refresh,
+    pushover_ack,
+    quiet_digest,
+    quote_stream,
+    threshold_eval,
+    tick_aggregator,
+    x_account_poll,
+)
 
 log = logging.getLogger("deleveraging_watch.scheduler")
 
@@ -32,6 +42,19 @@ def start() -> None:
     scheduler.add_job(threshold_eval.run, "interval", seconds=5, id="threshold_evaluator")
     scheduler.add_job(quote_stream.run, "interval", seconds=30, id="quote_stream_supervisor")
     scheduler.add_job(pushover_ack.run, "interval", seconds=30, id="pushover_ack_poll")
+
+    # Phase 2: news/social/earnings.
+    scheduler.add_job(massive_news_poll.run, "interval", hours=1,
+                      id="massive_news_poll")
+    scheduler.add_job(x_account_poll.run, "interval", minutes=1,
+                      id="x_account_poll")
+    scheduler.add_job(earnings_sync.run, "cron", hour=2, minute=0,
+                      id="earnings_sync")
+    # Monthly Haiku refresh: 1st-Sun-of-month at 03:30 local. APScheduler can't
+    # express "1st Sunday" directly, so we schedule every Sunday at 03:30 and
+    # let the job's own ≤7-day skip rule keep it monthly per symbol.
+    scheduler.add_job(profile_text_refresh.run, "cron", day_of_week="sun",
+                      hour=3, minute=30, id="profile_text_refresh")
 
     # Morning digest at the configured ET time (default 08:00).
     digest_hhmm = (get_setting("global", {}) or {}).get("quiet_hours", {}).get(
