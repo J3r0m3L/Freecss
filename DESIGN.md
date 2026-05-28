@@ -1461,13 +1461,29 @@ deleveraging-watch/
 │   │   ├── lib/socket.ts
 │   │   └── store.ts
 │   └── package.json
-└── scripts/
-    └── launchd/com.user.deleveraging-watch.plist
+├── scripts/
+│   └── launchd/com.user.deleveraging-watch.plist
+└── tests/                       (pytest suite — mirrors server/; see §18)
+    ├── conftest.py              (fresh-DB fixture, Flask test client, helpers)
+    ├── test_db.py
+    ├── test_config.py
+    ├── test_adapters_stub.py
+    ├── test_quiet_hours.py
+    ├── test_volume_zscore.py
+    ├── test_rules.py
+    ├── test_engine.py
+    ├── test_pushover.py
+    ├── test_api_watchlist.py
+    ├── test_api_alerts.py
+    ├── test_api_settings.py
+    └── test_api_health.py
 ```
 
 ---
 
 ## 16. Phased roadmap
+
+Testing is a per-phase discipline, not a phase of its own: every phase ships pytest coverage for the Python modules it adds (see §18).
 
 | Phase | Version | Status | Headline |
 |---|---|---|---|
@@ -1534,3 +1550,49 @@ Each row is a foundational decision plus a pointer to where it lives. All v1-blo
 ### Still open
 
 - **Asset classes beyond equities/ETFs for v1.** Current v1 covers equities + ETF proxies (factor / thematic / commodity). Open: do we want to commit to actual futures contracts (`CL=F`, `GC=F`) from day one, which would require subscribing to Massive Futures (Phase 7 pulled forward)? Default if unanswered: equity/ETF only for v1, real futures wait for Phase 7.
+
+---
+
+## 18. Testing strategy
+
+Python is tested with **pytest**. The frontend is not unit-tested in v1 — it's thin enough that broken renders surface immediately against the live backend, and a single-user dashboard doesn't justify the React-testing-library overhead. Revisit if the SPA grows past ~10 routes.
+
+### Discipline
+
+Every phase that adds Python modules ships pytest coverage for them in the **same PR**. "Working" means `pytest` is green; the smoke scripts under `scripts/` are quick demonstrations, not the test of record. CI is out of scope for a personal laptop project — run `pytest` locally before each phase ends.
+
+### Layout
+
+`tests/` mirrors `server/` one-for-one (see §15). A `conftest.py` at the root provides shared fixtures; per-test isolation is the default.
+
+### Fixtures
+
+- **Fresh DB per test.** `fresh_db` (autouse) points `DW_DB_PATH` at a per-session tempfile, closes the thread-local connection between tests, and re-runs `init_db()` so seeds are loaded fresh. No test ever touches the real `deleveraging_watch.db`.
+- **Flask test client.** `client` builds the app with `start_background=False` (no scheduler, no feed thread) and returns `app.test_client()`. Background work is exercised by calling job `run()` functions directly.
+- **Synthetic ticks.** `seed_ticks(iid, start_px, end_px, n, spread_bps)` writes a linear price walk into the `tick` table so rules tests are deterministic regardless of wall-clock.
+- **Time injection.** `quiet_hours.route(severity, now_et=...)` accepts an explicit time, so quiet-hours tests don't depend on when they run.
+
+### What to test (and what not to)
+
+| Worth testing | Notes |
+|---|---|
+| Pure functions (rules, quiet_hours.route, volume z-score, pushover.category_for) | Deterministic in / deterministic out — cheap and high-signal. |
+| Engine orchestration | dedup, persist+adverse routing, console fallback. Mock `socketio` with a stub that records emits. |
+| API blueprints | `client.get/post/...` round-trips. Validation errors (400, 404, 409) are part of the contract. |
+| DB schema + seeds | `init_db()` is idempotent; seeds load 80 buckets + 15 X accounts. |
+| StubAdapter | Subscribe → tick fires on the callback within one polling interval. |
+
+| Not worth testing |
+|---|
+| `MassiveAdapter` live socket (covered by integration smoke once a key exists; mocking websocket-client adds friction without confidence). |
+| `PushoverNotifier` real send (mock `requests.post`; no live calls in CI). |
+| APScheduler trigger plumbing (it works; test the job `run()` functions, not the cron expression). |
+| Frontend (see "not unit-tested" above). |
+
+### Running
+
+```bash
+../bin/pip install -e '.[dev]'   # pytest + ruff
+../bin/pytest -q                  # whole suite
+../bin/pytest tests/test_rules.py # one module
+```
